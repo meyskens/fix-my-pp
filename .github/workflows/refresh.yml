@@ -16,18 +16,19 @@ jobs:
         go-version: "1.17"
     - name: Run script
       run: |
-          go run ./
+          echo go run ./
     - name: Ggzip the file
       run: |
-        gzip -9 v2-all-fixed.json
-        mv v2-all-fixed.json.gz v2-all.json.gz
+        echo gzip -9 v2-all-fixed.json
+        echo mv v2-all-fixed.json.gz v2-all.json.gz
     - name: Upload
       run: |
+        sudo apt update
+        DEBIAN_FRONTEND=noninteractive sudo apt install -y s3cmd
         cp .github/workflows/s3conf ~/.s3cfg
         echo "secret_key = ${S3_SECRET_KEY}" >>~/.s3cfg
         echo "access_key = ${S3_ACCESS_KEY}" >>~/.s3cfg
         chmod 600 ~/.s3cfg
-        sudo apt update
-        sudo apt install -y s3cmd
+        cat ~/.s3cfg
         s3cmd --config=~/.s3cfg put v2-all.json.gz s3://static.eyskens.me/bssc/v2-all.json.gz
 
