@@ -7,7 +7,7 @@ A [recent change in BeatSaver broke PP display in song data on Beat Saber](https
 ## Shut up, how do I fix it?
 No worries I did most of the hard work for you already!
 
-1) Download my version of (SongCoreData.dll)[TODP] (don't trust me? then do it yourself!)
+1) Download my version of [SongCoreData.dll](https://github.com/meyskens/fix-my-pp/raw/main/SongDataCore.dll) (don't trust me? then do it yourself!)
 2) Go to your Beat Saber folder and go to `plugins` and replace SongCoreData.dll with mine
 3) Repeat this every time you let ModAssistant replace it ;)
 
