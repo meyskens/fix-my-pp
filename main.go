@@ -125,8 +125,7 @@ func difficultyToInt(diff string) int {
 		return 5
 	case "Expert":
 		return 7
-	case "ExpertPlus":
-	case "Expert+":
+	case "ExpertPlus","Expert+":
 		return 9
 	}
 	return 0
