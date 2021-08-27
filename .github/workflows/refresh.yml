@@ -10,11 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Setup go
-      uses: actions/setup-go@v1
+    - name: Setup Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ‘1.17.0’
     - name: Run script
       run: |
-          go run *.go
+          go run ./
     - name: Ggzip the file
       run: |
         gzip -9 v2-all-fixed.json

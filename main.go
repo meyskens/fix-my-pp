@@ -132,7 +132,7 @@ func main() {
 	log.Println("done")
 
 	// write back to disk
-	nf, err := os.Create("v2-all-fixed-sync.json")
+	nf, err := os.Create("v2-all-fixed.json")
 	if err != nil {
 		panic(err)
 	}
