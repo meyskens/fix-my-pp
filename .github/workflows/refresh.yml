@@ -19,7 +19,7 @@ jobs:
           go run ./
     - name: Ggzip the file
       run: |
-        gzip -9 v2-all-fixed.json
+        gzip v2-all-fixed.json
         mv v2-all-fixed.json.gz v2-all.json.gz
     - name: Upload
       run: |
