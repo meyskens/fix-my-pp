@@ -5,11 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"math"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -63,29 +65,14 @@ var rankedSongs map[string]bool
 
 func main() {
 	rankedSongs = make(map[string]bool)
-	ranked, err := zip.OpenReader("ranked_all.zip")
+	log.Println("Loading ranked songs...")
+	loadRankedFromPlaylist()
+	loadRankedFromScraped()
+
+	err := downloadToFile("https://cdn.wes.cloud/beatstar/bssb/v2-all.json", "v2-all.json")
 	if err != nil {
 		panic(err)
 	}
-	defer ranked.Close()
-
-	for _, file := range ranked.File {
-		f, err := file.Open()
-		if err != nil {
-			panic(err)
-		}
-		data, err := ioutil.ReadAll(f)
-		if err != nil {
-			panic(err)
-		}
-		pl := bplist.NewPlaylist()
-		err = json.Unmarshal(data, &pl)
-		for _, in := range pl.Songs {
-			rankedSongs[in.Hash] = true
-		}
-		f.Close()
-	}
-
 	f, err := os.Open("v2-all.json")
 	if err != nil {
 		panic(err)
@@ -106,11 +93,12 @@ func main() {
 
 	wg := sync.WaitGroup{}
 	for hash := range allData {
-		hashCh <- hash
+		hashCh <- strings.ToUpper(hash)
 	}
 
 	wg.Add(c)
 	log.Println(c, "to process")
+	log.Println(len(rankedSongs), "are ranked")
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
 		for {
@@ -209,4 +197,84 @@ func difficultyToInt(diff string) int {
 		return 9
 	}
 	return 0
+}
+
+func loadRankedFromPlaylist() {
+	err := downloadToFile("https://github.com/aplulu/bs-ranked-playlist/releases/latest/download/ranked_all.zip", "ranked_all.zip")
+	if err != nil {
+		panic(err)
+	}
+	ranked, err := zip.OpenReader("ranked_all.zip")
+	if err != nil {
+		panic(err)
+	}
+	defer ranked.Close()
+
+	for _, file := range ranked.File {
+		f, err := file.Open()
+		if err != nil {
+			panic(err)
+		}
+		data, err := ioutil.ReadAll(f)
+		if err != nil {
+			panic(err)
+		}
+		pl := bplist.NewPlaylist()
+		json.Unmarshal(data, &pl)
+		for _, in := range pl.Songs {
+			rankedSongs[strings.ToUpper(in.Hash)] = true
+		}
+		f.Close()
+	}
+}
+
+func loadRankedFromScraped() {
+	err := downloadToFile("https://github.com/andruzzzhka/BeatSaberScrappedData/raw/master/combinedScrappedData.zip", "combinedScrappedData.zip")
+	if err != nil {
+		panic(err)
+	}
+	ranked, err := zip.OpenReader("combinedScrappedData.zip")
+	if err != nil {
+		panic(err)
+	}
+	defer ranked.Close()
+
+	for _, file := range ranked.File {
+		f, err := file.Open()
+		if err != nil {
+			panic(err)
+		}
+		data, err := ioutil.ReadAll(f)
+		if err != nil {
+			panic(err)
+		}
+		list := []scrapeEntry{}
+		json.Unmarshal(data, &list)
+		for _, entry := range list {
+			for _, diff := range entry.Diffs {
+				if diff.Ranked {
+					rankedSongs[strings.ToUpper(entry.Hash)] = true
+				}
+				break
+			}
+		}
+		f.Close()
+	}
+}
+
+func downloadToFile(url, file string) error {
+	res, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	f, err := os.Create(file)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(f, res.Body)
+	return err
 }
