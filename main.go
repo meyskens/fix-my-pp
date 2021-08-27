@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/zip"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -8,7 +9,10 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"sync"
 	"time"
+
+	"github.com/meyskens/recent-beater/pkg/bplist"
 )
 
 type score struct {
@@ -53,7 +57,34 @@ type data struct {
 	Uploaddate    time.Time   `json:"uploaddate"`
 }
 
+var allData map[string]data
+var rankedSongs map[string]bool
+
 func main() {
+	rankedSongs = make(map[string]bool)
+	ranked, err := zip.OpenReader("ranked_all.zip")
+	if err != nil {
+		panic(err)
+	}
+	defer ranked.Close()
+
+	for _, file := range ranked.File {
+		f, err := file.Open()
+		if err != nil {
+			panic(err)
+		}
+		data, err := ioutil.ReadAll(f)
+		if err != nil {
+			panic(err)
+		}
+		pl := bplist.NewPlaylist()
+		err = json.Unmarshal(data, &pl)
+		for _, in := range pl.Songs {
+			rankedSongs[in.Hash] = true
+		}
+		f.Close()
+	}
+
 	f, err := os.Open("v2-all.json")
 	if err != nil {
 		panic(err)
@@ -64,29 +95,62 @@ func main() {
 		panic(err)
 	}
 
-	allData := map[string]data{}
+	allData = make(map[string]data)
 	json.Unmarshal(file, &allData)
+	log.Println("read file")
 
-	c := 0
-	for hash, level := range allData {
-		for _, diff := range level.Diffs {
-			diff.Pp = getPP(hash, diff.Diff)
-			if diff.Pp != "0" {
-				log.Println(hash, diff.Diff, diff.Pp)
-			}
-			time.Sleep(5 * time.Millisecond)
-		}
-		c++
-		fmt.Printf("\r%d/%d", c, len(allData))
+	c := len(allData)
+	cMutex := sync.Mutex{}
+	hashCh := make(chan string, c)
+
+	wg := sync.WaitGroup{}
+	for hash := range allData {
+		hashCh <- hash
+		wg.Add(1)
 	}
 
+	log.Println(c, "to process")
+	go func() {
+		for {
+			fmt.Printf("\r%d/%d", len(allData)-c, len(allData))
+			time.Sleep(time.Second)
+		}
+	}()
+	for i := 0; i < 2; i++ {
+		go func() {
+			for {
+				hash := <-hashCh
+				if _, ok := rankedSongs[hash]; ok {
+					getData(hash, &wg)
+				}
+
+				cMutex.Lock()
+				c--
+				cMutex.Unlock()
+			}
+		}()
+	}
+
+	wg.Wait()
+
 	// write back to disk
-	nf, err := os.Create("v2-all-fixed.json")
+	nf, err := os.Create("v2-all-fixed-sync.json")
 	if err != nil {
 		panic(err)
 	}
 	defer nf.Close()
 	json.NewEncoder(nf).Encode(allData)
+}
+
+func getData(hash string, wg *sync.WaitGroup) {
+	for _, diff := range allData[hash].Diffs {
+		diff.Pp = getPP(hash, diff.Diff)
+		if diff.Pp != "0" {
+			log.Println(hash, diff.Diff, diff.Pp)
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	wg.Done()
 }
 
 func getPP(hash, diff string) string {
@@ -104,7 +168,14 @@ func getPP(hash, diff string) string {
 		return ""
 	}
 	data := score{}
-	json.Unmarshal(body, &data)
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		log.Println(string(body))
+		log.Println(err)
+		// probably hit a rate limit
+		time.Sleep(time.Second)
+		return getPP(hash, diff)
+	}
 	if !data.Ranked {
 		return "0"
 	}
