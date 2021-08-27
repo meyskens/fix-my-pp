@@ -14,8 +14,7 @@ jobs:
       uses: actions/setup-go@v1
     - name: Run script
       run: |
-          ls
-          go run ./
+          go run *.go
     - name: Ggzip the file
       run: |
         gzip -9 v2-all-fixed.json
