@@ -4,9 +4,6 @@ on:
     - cron:  "0 */2 * * *"
   push:
     branches: [ main ]
-stages:
-  - build
-
 
 jobs:
   build:
