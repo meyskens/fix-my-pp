@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -106,24 +107,31 @@ func main() {
 	wg := sync.WaitGroup{}
 	for hash := range allData {
 		hashCh <- hash
-		wg.Add(1)
 	}
 
+	wg.Add(c)
 	log.Println(c, "to process")
+	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
 		for {
-			fmt.Printf("\r%d/%d", len(allData)-c, len(allData))
-			time.Sleep(time.Second)
+			fmt.Printf("%d/%d\n", len(allData)-c, len(allData))
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(time.Second * 1):
+				continue
+			}
 		}
 	}()
+
 	for i := 0; i < 2; i++ {
 		go func() {
 			for {
 				hash := <-hashCh
 				if _, ok := rankedSongs[hash]; ok {
-					getData(hash, &wg)
+					getData(hash)
 				}
-
+				wg.Done()
 				cMutex.Lock()
 				c--
 				cMutex.Unlock()
@@ -132,6 +140,8 @@ func main() {
 	}
 
 	wg.Wait()
+	cancel()
+	log.Println("done")
 
 	// write back to disk
 	nf, err := os.Create("v2-all-fixed-sync.json")
@@ -142,15 +152,14 @@ func main() {
 	json.NewEncoder(nf).Encode(allData)
 }
 
-func getData(hash string, wg *sync.WaitGroup) {
-	for _, diff := range allData[hash].Diffs {
-		diff.Pp = getPP(hash, diff.Diff)
-		if diff.Pp != "0" {
-			log.Println(hash, diff.Diff, diff.Pp)
+func getData(hash string) {
+	for i := range allData[hash].Diffs {
+		allData[hash].Diffs[i].Pp = getPP(hash, allData[hash].Diffs[i].Diff)
+		if allData[hash].Diffs[i].Pp != "0" {
+			log.Println(hash, allData[hash].Diffs[i].Diff, allData[hash].Diffs[i].Pp)
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-	wg.Done()
 }
 
 func getPP(hash, diff string) string {
@@ -196,7 +205,7 @@ func difficultyToInt(diff string) int {
 		return 5
 	case "Expert":
 		return 7
-	case "ExpertPlus","Expert+":
+	case "ExpertPlus", "Expert+":
 		return 9
 	}
 	return 0
