@@ -25,10 +25,10 @@ jobs:
       run: |
         sudo apt update
         DEBIAN_FRONTEND=noninteractive sudo apt install -y s3cmd
-        cp .github/workflows/s3conf ~/.s3cfg
-        echo "secret_key = ${{secrets.S3_SECRET_KEY}}" >>~/.s3cfg
-        echo "access_key = ${{secrets.S3_ACCESS_KEY}}" >>~/.s3cfg
-        chmod 600 ~/.s3cfg
-        cat ~/.s3cfg
-        s3cmd --config=~/.s3cfg put v2-all.json.gz s3://static.eyskens.me/bssc/v2-all.json.gz
+        cp .github/workflows/s3conf $HOME/.s3cfg
+        echo "secret_key = ${{secrets.S3_SECRET_KEY}}" >>$HOME/.s3cfg
+        echo "access_key = ${{secrets.S3_ACCESS_KEY}}" >>$HOME/.s3cfg
+        chmod 600 $HOME/.s3cfg
+        cat $HOME/.s3cfg
+        s3cmd put v2-all.json.gz s3://static.eyskens.me/bssc/v2-all.json.gz
 
