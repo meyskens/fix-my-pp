@@ -1,6 +1,6 @@
 # Fix my PP
 
-> Note: if you are not familiar with beatsaber modding, do not attempt this!
+> Note: if you are not familiar with Beat Saber modding, do not attempt this!
 
 A [recent change in BeatSaver broke PP display in song data on Beat Saber](https://github.com/halsafar/BeatSaberSongDataCore/issues/12). While a fix is on the way it is quite annoying as it breaks sorting of things. So I decided to write a fix of my own, while the scraper where the bug is in does not seem to be open source we can use the data file and the BeatSaver API to fix it ourselves. But no worries I do host a copy of my fix for you to use!
 
