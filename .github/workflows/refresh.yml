@@ -1,0 +1,36 @@
+name: Publish an update
+on:
+  schedule:
+    - cron:  "0 */2 * * *"
+  push:
+    branches: [ main ]
+stages:
+  - build
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+          # Need all the history for git describe --tags to work
+          fetch-depth: 0
+    - name: Setup go
+      uses: actions/setup-go@v1
+    - name: Run script
+      run: |
+          go run ./
+    - name: Ggzip the file
+      run: |
+        gzip -9 v2-all-fixed.json
+        mv v2-all-fixed.json.gz v2-all.json.gz
+    - name: Upload
+      run: |
+        cp .github/workflows/s3conf ~/.s3cfg
+        echo "secret_key = ${S3_SECRET_KEY}" >>~/.s3cfg
+        echo "access_key = ${S3_ACCESS_KEY}" >>~/.s3cfg
+        sudo apt update
+        sudo apt install -y s3cmd
+        s3cmd put v2-all.json.gz s3://static.eyskens.me/bssc/v2-all.json.gz
+
