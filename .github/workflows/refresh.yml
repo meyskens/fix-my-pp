@@ -16,11 +16,11 @@ jobs:
         go-version: "1.17"
     - name: Run script
       run: |
-          echo go run ./
+          go run ./
     - name: Ggzip the file
       run: |
-        echo gzip -9 v2-all-fixed.json
-        echo mv v2-all-fixed.json.gz v2-all.json.gz
+        gzip -9 v2-all-fixed.json
+        mv v2-all-fixed.json.gz v2-all.json.gz
     - name: Upload
       run: |
         sudo apt update
@@ -29,6 +29,5 @@ jobs:
         echo "secret_key = ${{secrets.S3_SECRET_KEY}}" >>$HOME/.s3cfg
         echo "access_key = ${{secrets.S3_ACCESS_KEY}}" >>$HOME/.s3cfg
         chmod 600 $HOME/.s3cfg
-        cat $HOME/.s3cfg
         s3cmd put v2-all.json.gz s3://static.eyskens.me/bssc/v2-all.json.gz
 
