@@ -7,9 +7,14 @@ A [recent change in BeatSaver broke PP display in song data on Beat Saber](https
 ## Shut up, how do I fix it?
 No worries I did most of the hard work for you already!
 
+### Method 1
 1) Download my version of [SongCoreData.dll](https://github.com/meyskens/fix-my-pp/raw/main/SongDataCore.dll) (don't trust me? then do it yourself! Code is at https://github.com/meyskens/BeatSaberSongDataCore)
 2) Go to your Beat Saber folder and go to `plugins` and replace SongCoreData.dll with mine
 3) Repeat this every time you let ModAssistant replace it ;)
+
+### Method 2
+1) Download [SongDataCoreSourceOverrider by Eris](https://github.com/ErisApps/SongDataCoreSourceOverrider) (compiled version in this repo)
+2) Go to your Beat Saber folder and go to `plugins` and place the DLL file in there
 
 ## I'm like you, a nerd, tell me more!
 I wrote a small scripy in `main.go` that loads in the original JSON file and fetches the highest PP rank via scoresaber/beatsaver for that level then it places the PP score inside the data structure (as was suggested in the original issue!). Beatsaver almost got 90 000 songs so that takes a while. Currently I use the [ranked playlist](https://github.com/aplulu/bs-ranked-playlist) to only fetch ranked songs. I ran this on my laptop then hosted it just like the original. There is a tiny bug and that is that all levels got the standard gamemode PP as I didn't find the right integer translation yet (quite annoying that the API uses integers for all types but everything else does not).
